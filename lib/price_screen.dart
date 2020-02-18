@@ -12,15 +12,30 @@ class PriceScreen extends StatefulWidget {
 
 class _PriceScreenState extends State<PriceScreen> {
   String selectedCurrency = 'USD';
+  Rate btcRate;
+  Rate ethRate;
+  Rate ltcRate;
+
+  String btc = 'Select Your Currency.';
+  String eth = 'Select Your Currency.';
+  String ltc = 'Select Your Currency.';
+
+  void updateLabels() {
+    btc = showRate(btcRate);
+    eth = showRate(ethRate);
+    ltc = showRate(ltcRate);
+  }
 
   List<Widget> getDropDownItems() {
     List<DropdownMenuItem<String>> dropdownItems = [];
     for (String currency in currenciesList) {
       var newItem = DropdownMenuItem(
-        child: Text(currency,
-        style: TextStyle(
-          color: Colors.white,
-        ),),
+        child: Text(
+          currency,
+          style: TextStyle(
+            color: Colors.white,
+          ),
+        ),
         value: currency,
       );
       dropdownItems.add(newItem);
@@ -28,32 +43,71 @@ class _PriceScreenState extends State<PriceScreen> {
     return dropdownItems;
   }
 
-  Widget getDropDownButton(){
+  Future updateRates() async {
+    btcRate = await CoinData(selectedCoin: selectedCurrency, baseCoin: 'BTC')
+        .getResults();
+    ethRate = await CoinData(selectedCoin: selectedCurrency, baseCoin: 'ETH')
+        .getResults();
+    ltcRate = await CoinData(selectedCoin: selectedCurrency, baseCoin: 'LTC')
+        .getResults();
+  }
 
+  Widget getDropDownButton() {
     return DropdownButton<String>(
       value: selectedCurrency,
       items: getDropDownItems(),
-      onChanged: (value) {
+      onChanged: (value) async {
+        selectedCurrency = value;
+        await updateRates();
         setState(() {
-          selectedCurrency = value;
+          updateLabels();
         });
       },
     );
-
   }
 
-  Widget getCupertinoPicker(){
+  Widget getCupertinoPicker() {
     return CupertinoPicker(
       backgroundColor: Colors.lightBlue,
       itemExtent: 32.0,
-      onSelectedItemChanged: (value) {
+      onSelectedItemChanged: (value) async {
+        selectedCurrency = currenciesList[value];
+        await updateRates();
         setState(() {
-          selectedCurrency = currenciesList[value];
+          updateLabels();
         });
       },
       children: getDropDownItems(),
     );
+  }
 
+  Widget getCurrencyCard(String text) {
+    return Card(
+      color: Colors.lightBlueAccent,
+      elevation: 5.0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10.0),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: 15.0, horizontal: 14.0),
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 20.0,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+
+  String showRate(Rate rate) {
+    String result = 'Select Your Currency.';
+    if (rate != null) {
+      result = '1 ${rate.base} = ${rate.value.toString()} ${rate.selected}';
+    }
+    return result;
   }
 
   @override
@@ -63,41 +117,30 @@ class _PriceScreenState extends State<PriceScreen> {
         title: Text('🤑 Coin Ticker'),
       ),
       body: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Padding(
-            padding: EdgeInsets.fromLTRB(18.0, 18.0, 18.0, 0),
-            child: Card(
-              color: Colors.lightBlueAccent,
-              elevation: 5.0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 15.0, horizontal: 28.0),
-                child: Text(
-                  '1 BTC = ? USD',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 20.0,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Padding(
+              padding: EdgeInsets.fromLTRB(18.0, 9.0, 18.0, 0),
+              child: getCurrencyCard(btc),
             ),
-          ),
-          Container(
-            height: 150.0,
-            alignment: Alignment.center,
-            padding: EdgeInsets.only(bottom: 30.0),
-            color: Colors.lightBlue,
-            child: Platform.isIOS ? getCupertinoPicker() : getDropDownButton(),
-          ),
-        ],
-      ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(18.0, 9.0, 18.0, 0),
+              child: getCurrencyCard(eth),
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(18.0, 9.0, 18.0, 0),
+              child: getCurrencyCard(ltc),
+            ),
+            Container(
+              height: 150.0,
+              alignment: Alignment.center,
+              padding: EdgeInsets.only(bottom: 30.0),
+              color: Colors.lightBlue,
+              child:
+                  Platform.isIOS ? getCupertinoPicker() : getDropDownButton(),
+            ),
+          ]),
     );
   }
 }
-
-
